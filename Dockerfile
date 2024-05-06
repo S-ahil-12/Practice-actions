@@ -20,7 +20,11 @@ FROM nginx:latest
 
 # Copy Nginx configuration file
 COPY default.conf /etc/nginx/conf.d/default.conf
+# Build stage (assuming your build process creates files in /app/build)
+RUN npm install && npm run build  # Replace with your build command
 
+# Final stage
+COPY --from=builder /app/build /usr/share/nginx/html
 # Copy built application from stage 1 (adjust path if needed)
 COPY --from=builder /app/dist /usr/share/nginx/html
 
