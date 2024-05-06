@@ -1,9 +1,9 @@
-name: uppo-frontend test deployment
+name: test deployment
 
 on:
   push:
     branches:
-      - feature/akshayAD  # Trigger on pushes to the feature/akshayAD branch
+      - main  # Trigger on pushes to the feature/akshayAD branch
 
 jobs:
   build-and-deploy:
