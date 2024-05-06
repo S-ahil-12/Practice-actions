@@ -1,0 +1,82 @@
+name: uppo-frontend test deployment
+
+on:
+  push:
+    branches:
+      - feature/akshayAD  # Trigger on pushes to the feature/akshayAD branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest  # Or your preferred runner
+
+    steps:
+      - uses: actions/checkout@v3  # Checkout code from repository
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v3  # Combined setup for efficiency
+        with:
+          node-version: 20  # Adjust based on your project's requirements
+
+      - name: Install Angular CLI
+        run: npm install -g @angular/cli --force  # Install globally
+
+      - name: Install project dependencies
+        run: npm ci  # Use npm ci or yarn install based on your project setup
+
+      - name: Build frontend application
+        run: npm run build  # Or your build command
+
+      - name: Build Docker image (with environment variables)
+        run: |
+          docker build -t ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend .
+          env:
+            DOCKER_USERNAME=${{ secrets.TEST_DOCKER_USERNAME }}
+            DOCKER_PASSWORD=${{ secrets.TEST_DOCKER_PASSWORD }}  # Access secrets securely
+
+      - name: Login to Docker Hub (securely using a login action)
+        uses: docker/login-action@v2  # Use a dedicated action for better security
+        with:
+          username: ${{ secrets.TEST_DOCKER_USERNAME }}
+          password: ${{ secrets.TEST_DOCKER_PASSWORD }}
+
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend
+
+      - name: SSH to Instance (secure private key handling)
+        uses: appleboy/ssh-action@v0.1.2  # Consider a more secure and configurable alternative
+        with:
+          host: ${{ secrets.TEST_SSH_HOST }}
+          username: ${{ secrets.TEST_USER_NAME }}
+          key: ${{ secrets.TEST_SSH_PRIVATEKEY }}  # Reference secret directly
+          # Consider using a dedicated SSH key deployment action for better security
+
+      - name: Docker commands on server (improved error handling)
+        run: |
+          set -e  # Exit on non-zero exit codes for better error handling
+
+          # Store private key securely within the step
+          echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > my-ssh-key.pem
+          chmod 400 my-ssh-key.pem
+
+          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem $USER_NAME@${HOSTNAME} <<'EOF'
+          # Commands within the script block
+          sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
+          sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend
+
+          # Improved output with better logging
+          echo "Starting Docker container..."
+          UNIQUE_ID=$(date +%s)
+          CONTAINER_NAME="uppo-frontend-${UNIQUE_ID}"
+          sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend
+
+          echo "Docker frontend container started: ${CONTAINER_NAME}"
+
+          # Optional: execute frontend script (improve error handling)
+          if [[ -f /home/uppo-stage/scripts/frontend.bash ]]; then
+            echo "Executing frontend script..."
+            bash /home/uppo-stage/scripts/frontend.bash
+          fi
+          EOF
+
+          # Remove temporary key file after execution
+          rm my-ssh-key.pem
