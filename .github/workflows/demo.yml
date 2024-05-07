@@ -48,6 +48,7 @@ jobs:
       - name: SSH to Instance
         run: |
           ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ${{ secrets.TEST_SSH_USERNAME }}@${{ secrets.TEST_SSH_HOST }} <<'EOF'
+          #ssh conf
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
@@ -63,7 +64,7 @@ jobs:
           # Remove temporary key file after execution
           rm my-ssh-key.pem
           EOF
-
+          
       - name: Cleanup (optional)
         run: rm my-ssh-key.pem  # Remove the temporary key file
 
