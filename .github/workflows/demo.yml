@@ -1,4 +1,4 @@
-name: test deployment
+name: Secure Deployment with Private Key
 
 on:
   push:
@@ -38,25 +38,15 @@ jobs:
       - name: Push Docker image to Docker Hub
         run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
-  # Replace appleboy action with a more secure alternative (e.g., nwiego/ssh-action)
-      - name: SSH to Instance (secure private key handling)
-        uses: nwiego/ssh-action@v1.4.1  # Replace with your preferred secure SSH action
-        with:
-          host: ${{ secrets.TEST_SSH_HOST }}
-          username: ${{ secrets.TEST_USER_NAME }}
-          # Reference a secret containing the encrypted private key
-          private-key: ${{ secrets.TEST_SSH_PRIVATEKEY_ENCRYPTED }}
-
-      - name: Docker commands on server (improved error handling)
+  # Secure SSH connection with temporary private key file
+      - name: Prepare SSH key (avoid storing private key directly)
         run: |
-          set -e  # Exit on non-zero exit codes for better error handling
-
-          # Decrypt the private key within the step (specific to the chosen action)
-          # (This is a hypothetical example, consult the action's documentation)
-          openssl aes-256-cbc -k "${{ secrets.TEST_SSH_KEY_DECRYPTION_KEY }}" -d -in my-ssh-key.pem.enc -out my-ssh-key.pem
-
+          echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > my-ssh-key.pem
           chmod 400 my-ssh-key.pem
+          # (Optional) Consider adding the server's public key to known_hosts
 
+      - name: SSH to Instance
+        run: |
           ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem $USER_NAME@${HOSTNAME} <<'EOF'
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
@@ -70,7 +60,11 @@ jobs:
 
           echo "Docker frontend container started: ${CONTAINER_NAME}"
 
-
           # Remove temporary key file after execution
           rm my-ssh-key.pem
+          EOF
+
+      - name: Cleanup (optional)
+        run: rm my-ssh-key.pem  # Remove the temporary key file
+
 
