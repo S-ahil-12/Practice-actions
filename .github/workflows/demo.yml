@@ -36,16 +36,24 @@ jobs:
       - name: Push Docker image to Docker Hub
         run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
-  # Secure SSH connection with temporary private key file (for local development)
-      - name: SSH to Instance (Local Development)
-        env:
-          HOSTNAME: localhost  # Connect to local system (loopback interface)
-          USER_NAME: iapp  # Assuming your local username is 'iapp'
+  # Secure SSH connection with temporary private key file
+      - name: Prepare SSH key (avoid storing private key directly)
         run: |
           echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > my-ssh-key.pem
           chmod 400 my-ssh-key.pem
-          # Skip host key checking for development (not recommended for production)
+          # (Optional) Consider adding the server's public key to known_hosts
+
+      - name: SSH to Instance
+        env:
+          HOSTNAME: 192.168.8.189  # Use provided IP address
+          USER_NAME: iapp  # Assuming your local username is 'iapp'
+        run: |
+          # Retry SSH connection to handle potential first-time key acceptance
           ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem $USER_NAME@$HOSTNAME <<'EOF'
+          retry () {
+              $* || sleep 5 && echo "Trying again..." && $*
+          }
+          retry ssh-keyscan -t ed25519 -H $HOSTNAME >> ~/.ssh/known_hosts
           #ssh conf
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
