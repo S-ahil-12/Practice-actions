@@ -1,36 +1,30 @@
-# Stage 1: Build Node.js application
+# Use a Node.js base image with npm pre-installed
 FROM node:20-alpine AS builder
 
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package.json and package-lock.json (or yarn.lock)
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy remaining project files (excluding node_modules)
-COPY . . .npm
+# Copy your application code
+COPY . .
 
-# Build the application (replace with your actual build command if different)
-CMD [ "npm", "run", "build" ]  # Assuming you have a build script
+# Build stage (assuming your build process creates files in /dist)
+RUN npm run build  # Replace with your actual build command
 
-# Stage 2: Create final image with Nginx
+# Final nginx image
 FROM nginx:latest
 
-# Copy Nginx configuration file
+# Copy default configuration (optional, adjust as needed)
 COPY default.conf /etc/nginx/conf.d/default.conf
-# Build stage (assuming your build process creates files in /app/build)
-RUN npm install && npm run build  # Replace with your build command
 
-# Final stage
-COPY --from=builder /app/build /usr/share/nginx/html
-# Copy built application from stage 1 (adjust path if needed)
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Expose port 80
+# Expose port (optional, adjust based on your application)
 EXPOSE 80
 
-# Start Nginx
-CMD [ "nginx", "-g", "daemon off;" ]
+# Use the built application from the builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
 
