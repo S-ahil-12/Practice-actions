@@ -3,7 +3,7 @@ name: test deployment
 on:
   push:
     branches:
-      - main  # Trigger on pushes to the feature/akshayAD branch
+      - main  # Trigger on pushes to the main branch
 
 jobs:
   build-and-deploy:
@@ -26,12 +26,8 @@ jobs:
       - name: Build frontend application
         run: npm run build  # Or your build command
 
-      - name: Build Docker image (with environment variables)
-        run: |
-          docker build -t ${{ secrets.TEST_DOCKER_USERNAME }}/test .
-          env:
-            DOCKER_USERNAME=${{ secrets.TEST_DOCKER_USERNAME }}
-            DOCKER_PASSWORD=${{ secrets.TEST_DOCKER_PASSWORD }}  # Access secrets securely
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.TEST_DOCKER_USERNAME }}/test .
 
       - name: Login to Docker Hub (securely using a login action)
         uses: docker/login-action@v2  # Use a dedicated action for better security
@@ -67,7 +63,7 @@ jobs:
           echo "Starting Docker container..."
           UNIQUE_ID=$(date +%s)
           CONTAINER_NAME="frontend-${UNIQUE_ID}"
-          sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend
+          sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
           echo "Docker frontend container started: ${CONTAINER_NAME}"
 
