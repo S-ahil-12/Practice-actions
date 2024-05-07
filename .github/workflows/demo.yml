@@ -28,7 +28,7 @@ jobs:
 
       - name: Build Docker image (with environment variables)
         run: |
-          docker build -t ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend .
+          docker build -t ${{ secrets.TEST_DOCKER_USERNAME }}/test .
           env:
             DOCKER_USERNAME=${{ secrets.TEST_DOCKER_USERNAME }}
             DOCKER_PASSWORD=${{ secrets.TEST_DOCKER_PASSWORD }}  # Access secrets securely
@@ -40,7 +40,7 @@ jobs:
           password: ${{ secrets.TEST_DOCKER_PASSWORD }}
 
       - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend
+        run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
       - name: SSH to Instance (secure private key handling)
         uses: appleboy/ssh-action@v0.1.2  # Consider a more secure and configurable alternative
@@ -61,22 +61,16 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem $USER_NAME@${HOSTNAME} <<'EOF'
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
-          sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend
+          sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
           # Improved output with better logging
           echo "Starting Docker container..."
           UNIQUE_ID=$(date +%s)
-          CONTAINER_NAME="uppo-frontend-${UNIQUE_ID}"
+          CONTAINER_NAME="frontend-${UNIQUE_ID}"
           sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend
 
           echo "Docker frontend container started: ${CONTAINER_NAME}"
 
-          # Optional: execute frontend script (improve error handling)
-          if [[ -f /home/uppo-stage/scripts/frontend.bash ]]; then
-            echo "Executing frontend script..."
-            bash /home/uppo-stage/scripts/frontend.bash
-          fi
-          EOF
 
           # Remove temporary key file after execution
           rm my-ssh-key.pem
