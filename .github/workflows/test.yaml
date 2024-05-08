@@ -40,12 +40,12 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.TEST_USER_NAME }}@${{ secrets.TEST_SSH_HOST }} '
             sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
-            sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-backend
+            sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
             echo "deleting existing container if any"
             bash /home/uppo-stage/scripts/backend.bash
             UNIQUE_ID=$(date +%s)
             CONTAINER_NAME="uppo-backend-${UNIQUE_ID}"
             echo "Starting Docker container..."
-            sudo docker run -d --name $CONTAINER_NAME -p 3000:3000 ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-backend
+            sudo docker run -d --name $CONTAINER_NAME -p 3000:3000 ${{ secrets.TEST_DOCKER_USERNAME }}/test
             echo "Docker container started......."
 
