@@ -1,9 +1,9 @@
-name: test deployment
+name: Test deployment
 
 on:
   push:
     branches:
-      - main  # Trigger on pushes to the feature/akshayAD branch
+      - main
 
 jobs:
   build:
@@ -41,29 +41,22 @@ jobs:
       - name: Push Docker image to Docker Hub
         run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
-      - name: Deploy to server (secure SSH key deployment)
-        uses: nyanhsu/action-ssh-key-deploy@v1.2  # Secure SSH key deployment (consider alternatives)
-        with:
-          host: ${{ secrets.TEST_SSH_HOST }}
-          username: ${{ secrets.TEST_USER_NAME }}
-          # Avoid referencing secrets directly in the script
-
-      - name: Docker commands on server (improved error handling)
+      - name: SSH to Instance (**WARNING: INSECURE!)**
+        env:
+          HOSTNAME: ${{ secrets.TEST_SSH_HOST }}
+          USER_NAME: ${{ secrets.TEST_USER_NAME }}
         run: |
-          set -e  # Exit on non-zero exit codes for better error handling
-
-          # SSH connection established by the previous action
-          # (key securely transferred)
-
-          # Commands within the script block
-          sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
-          sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
-
-          # Improved output with better logging
-          echo "Starting Docker container..."
-          UNIQUE_ID=$(date +%s)
-          CONTAINER_NAME="frontend-${UNIQUE_ID}"
-          sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/test
-
-          echo "Docker frontend container started: ${CONTAINER_NAME}"
+          echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > my-ssh-key.pem
+          chmod 400 my-ssh-key.pem
+          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem $USER_NAME@${HOSTNAME} '  # **Exposing private key is insecure!**
+            sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
+            sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
+            echo "Hello github"
+            UNIQUE_ID=$(date +%s)
+            CONTAINER_NAME="uppo-frontend-${UNIQUE_ID}"
+            echo "Starting Docker container..."
+            sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-frontend
+            echo "Docker frontend container started......."
+          '
+          rm my-ssh-key.pem  # Remove temporary key file
 
