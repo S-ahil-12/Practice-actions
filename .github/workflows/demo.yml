@@ -3,31 +3,34 @@ name: test deployment
 on:
   push:
     branches:
-      - main  # Trigger on pushes to the main branch
+      - main  # Trigger on pushes to the feature/akshayAD branch
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest  # Or your preferred runner
+  build:
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3  # Checkout code from repository
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v3  # Combined setup for efficiency
+      - name: Setup Node.js (Node.js 20)
+        uses: actions/setup-node@v2
         with:
-          node-version: 20  # Adjust based on your project's requirements
+          node-version: '20'
 
-      - name: Install Angular CLI
-        run: npm install -g @angular/cli --force  # Install globally
+      - name: Setup Angular CLI
+        run: npm install -g @angular/cli --force
 
       - name: Install project dependencies
-        run: npm ci  # Use npm ci or yarn install based on your project setup
+        run: npm install --force
 
-      - name: Build frontend application
+      - name: Build frontend
         run: npm run build  # Or your build command
 
-      - name: Build Docker image
+      - name: Build Docker image (secure Docker credentials)
         run: docker build -t ${{ secrets.TEST_DOCKER_USERNAME }}/test .
+        env:
+          DOCKER_USERNAME: ${{ secrets.TEST_DOCKER_USERNAME }}
 
       - name: Login to Docker Hub (securely using a login action)
         uses: docker/login-action@v2  # Use a dedicated action for better security
@@ -42,7 +45,7 @@ jobs:
         uses: nyanhsu/action-ssh-key-deploy@v1.2  # Secure SSH key deployment (consider alternatives)
         with:
           host: ${{ secrets.TEST_SSH_HOST }}
-          username: ${{ secrets.TEST_SSH_USERNAME }}
+          username: ${{ secrets.TEST_USER_NAME }}
           # Avoid referencing secrets directly in the script
 
       - name: Docker commands on server (improved error handling)
@@ -63,5 +66,4 @@ jobs:
           sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
           echo "Docker frontend container started: ${CONTAINER_NAME}"
-
 
