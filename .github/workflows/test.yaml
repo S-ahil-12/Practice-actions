@@ -33,21 +33,19 @@ jobs:
           docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
-      - name: Setup SSH
+      - name: Setup SSH and SSH to Instance
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-
-      - name: SSH to Instance
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.TEST_SSH_HOST }}
-          username: ${{ secrets.TEST_SSH_USERNAME }}
-          key: ~/.ssh/id_rsa
-          port: 22
-          script: |
-            docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
-            docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
-            docker run -d --name container_name ${{ secrets.TEST_DOCKER_USERNAME }}/test
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.TEST_USER_NAME }}@${{ secrets.TEST_SSH_HOST }} '
+            sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
+            sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-backend
+            echo "deleting existing container if any"
+            bash /home/uppo-stage/scripts/backend.bash
+            UNIQUE_ID=$(date +%s)
+            CONTAINER_NAME="uppo-backend-${UNIQUE_ID}"
+            echo "Starting Docker container..."
+            sudo docker run -d --name $CONTAINER_NAME -p 3000:3000 ${{ secrets.TEST_DOCKER_USERNAME }}/uppo-backend
+            echo "Docker container started......."
 
