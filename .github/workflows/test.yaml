@@ -1,0 +1,47 @@
+name: Node Sample Project Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install 20
+          nvm use 20
+
+      - name: Install Dependencies
+        run: npm install --force
+
+      - name: Build
+        run: npm run build
+
+      - name: Create Docker Image
+        run: |
+          docker build -t ${{ secrets.TEST_DOCKER_USERNAME }}/test .
+          docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
+          docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
+
+      - name: SSH to Instance
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TEST_SSH_HOST }}
+          username: ${{ secrets.TEST_SSH_USERNAME }}
+          key: ${{ secrets.TEST_SSH_PRIVATEKEY }}
+          port: 22
+          script: |
+            docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
+            docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
+            docker run -d --name container_name ${{ secrets.TEST_DOCKER_USERNAME }}/test
+
