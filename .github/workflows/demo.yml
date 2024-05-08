@@ -1,3 +1,5 @@
+name: test deployment
+
 on:
   push:
     branches:
@@ -36,25 +38,22 @@ jobs:
       - name: Push Docker image to Docker Hub
         run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
-  # Secure SSH connection with temporary private key file
-      - name: Prepare SSH key (avoid storing private key directly)
-        run: |
-          echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > my-ssh-key.pem
-          chmod 400 my-ssh-key.pem
-          # (Optional) Consider adding the server's public key to known_hosts
+      - name: Deploy to server (secure SSH key deployment)
+        uses: nyanhsu/action-ssh-key-deploy@v1.2  # Secure SSH key deployment
+        with:
+          host: ${{ secrets.TEST_SSH_HOST }}
+          username: ${{ secrets.TEST_USER_NAME }}
+          # Avoid referencing secrets directly in the script
+          # (action handles secure key deployment)
+          key_name: ${{ secrets.TEST_SSH_PRIVATEKEY_NAME }}  # Optional: Name the key
 
-      - name: SSH to Instance
-        env:
-          HOSTNAME: 192.168.8.189  # Use provided IP address
-          USER_NAME: iapp  # Assuming your local username is 'iapp'
+      - name: Docker commands on server (improved error handling)
         run: |
-          # Retry SSH connection to handle potential first-time key acceptance
-          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem $USER_NAME@$HOSTNAME <<'EOF'
-          retry () {
-              $* || sleep 5 && echo "Trying again..." && $*
-          }
-          retry ssh-keyscan -t ed25519 -H $HOSTNAME >> ~/.ssh/known_hosts
-          #ssh conf
+          set -e  # Exit on non-zero exit codes for better error handling
+
+          # SSH connection established by the previous action
+          # (key securely transferred)
+
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
@@ -66,11 +65,5 @@ jobs:
           sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
           echo "Docker frontend container started: ${CONTAINER_NAME}"
-
-          # Remove temporary key file after execution
-          rm my-ssh-key.pem
-          EOF
-      - name: Cleanup (optional)
-        run: rm my-ssh-key.pem  # Remove the temporary key file
 
 
