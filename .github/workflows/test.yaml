@@ -33,16 +33,17 @@ jobs:
           docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
+      - name: Write SSH Key to File
+        run: echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+
       - name: SSH to Instance
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.TEST_SSH_HOST }}
           username: ${{ secrets.TEST_SSH_USERNAME }}
-          key: ${{ secrets.TEST_SSH_PRIVATEKEY }}
+          key: ~/.ssh/id_rsa
           port: 22
           script: |
-            eval "$(ssh-agent -s)"
-            echo "$TEST_SSH_PRIVATEKEY" | tr -d '\r' | ssh-add - > /dev/null
             docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
             docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
             docker run -d --name container_name ${{ secrets.TEST_DOCKER_USERNAME }}/test
