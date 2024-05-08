@@ -38,23 +38,20 @@ jobs:
       - name: Push Docker image to Docker Hub
         run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
-      - name: SSH to Instance (secure private key handling)
-        uses: appleboy/ssh-action@v0.1.2  # Consider a more secure and configurable alternative
+      - name: Deploy to server (secure SSH key deployment)
+        uses: nyanhsu/action-ssh-key-deploy@v1.2  # Secure SSH key deployment (consider alternatives)
         with:
           host: ${{ secrets.TEST_SSH_HOST }}
-          username: ${{ secrets.TEST_USER_NAME }}
-          key: ${{ secrets.TEST_SSH_PRIVATEKEY }}  # Reference secret directly
-          # Consider using a dedicated SSH key deployment action for better security
+          username: ${{ secrets.TEST_SSH_USERNAME }}
+          # Avoid referencing secrets directly in the script
 
       - name: Docker commands on server (improved error handling)
         run: |
           set -e  # Exit on non-zero exit codes for better error handling
 
-          # Store private key securely within the step
-          echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > my-ssh-key.pem
-          chmod 400 my-ssh-key.pem
+          # SSH connection established by the previous action
+          # (key securely transferred)
 
-          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem $USER_NAME@${HOSTNAME} <<'EOF'
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
@@ -68,6 +65,3 @@ jobs:
           echo "Docker frontend container started: ${CONTAINER_NAME}"
 
 
-          # Remove temporary key file after execution
-          rm my-ssh-key.pem
-          #rm
