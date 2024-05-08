@@ -1,4 +1,7 @@
-name: SSH Test and Create Folder
+13.60.78.58
+
+
+name: Node Sample Project Workflow
 
 on:
   push:
@@ -6,20 +9,48 @@ on:
       - main
 
 jobs:
-  ssh_test_and_create_folder:
+  build:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Echo SSH Private Key to File
-        run: echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: SSH to Remote Server and Create Folder
+      - name: Setup Node.js
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install 20
+          nvm use 20
+
+      - name: Install Dependencies
+        run: npm install --force
+
+      - name: Build
+        run: npm run build
+
+      - name: Create Docker Image
+        run: |
+          docker build -t ${{ secrets.TEST_DOCKER_USERNAME }}/test .
+          docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
+          docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: SSH to Instance
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.TEST_SSH_HOST }}
           username: ${{ secrets.TEST_SSH_USERNAME }}
           key: ~/.ssh/id_rsa
+          port: 22
           script: |
-            mkdir -p /root/test
-            echo "Folder created successfully in /root/test"
+            docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
+            docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
+            docker run -d --name container_name ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
