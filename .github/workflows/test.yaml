@@ -33,8 +33,11 @@ jobs:
           docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
-      - name: Write SSH Key to File
-        run: echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.TEST_SSH_PRIVATEKEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
       - name: SSH to Instance
         uses: appleboy/ssh-action@master
