@@ -45,7 +45,7 @@ jobs:
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
           UNIQUE_ID=$(date +%s)
-          CONTAINER_NAME="uppo-frontend-${UNIQUE_ID}"
+          CONTAINER_NAME="uppo-frontend-\${UNIQUE_ID}"
           echo "Starting Docker container..."
           sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/test
           echo "Docker frontend container started......."
