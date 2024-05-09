@@ -44,7 +44,7 @@ jobs:
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
-          CONTAINER_NAME="demo-${UNIQUE_ID}"
+          CONTAINER_NAME="uppo-frontend-\${{ github.run_id }}"
           echo "Starting Docker container..."
           sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/test
           echo "Docker frontend container started......."
