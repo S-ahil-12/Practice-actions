@@ -34,16 +34,15 @@ jobs:
           docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
       - name: Setup SSH and SSH to Instance
-         run: |
-            echo "$TEST_SSH_PRIVATEKEY" > action.pem
-            chmod 400 action.pem
-            ssh -o StrictHostKeyChecking=no -i action.pem ubuntu@13.53.112.231
-            sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
-            sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
-            echo "deleting existing container if any"
-            bash /home/uppo-stage/scripts/backend.bash
-            UNIQUE_ID=$(date +%s)
-            CONTAINER_NAME="uppo-backend-${UNIQUE_ID}"
-            echo "Starting Docker container..."
-            sudo docker run -d --name $CONTAINER_NAME -p 3000:3000 ${{ secrets.TEST_DOCKER_USERNAME }}/test
-            echo "Docker container started......."
+        run: |
+          echo "$TEST_SSH_PRIVATEKEY" > action.pem
+          chmod 400 action.pem
+          ssh -o StrictHostKeyChecking=no -i action.pem ubuntu@13.53.112.231
+          sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
+          sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
+          echo "Deleting existing container if any"
+          bash /home/uppo-stage/scripts/backend.bash
+          UNIQUE_ID=$(date +%s)
+          CONTAINER_NAME="uppo-backend-${UNIQUE_ID}"
+          echo "Starting Docker conta
+
