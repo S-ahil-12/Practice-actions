@@ -50,5 +50,6 @@ jobs:
       - name: Report Failure
         if: failure()
         run: echo "SSH connection or folder creation failed!"
-        fail-fast: true
+
+    fail-fast: true  # Moved to job level (if runner cannot be upgraded)
 
