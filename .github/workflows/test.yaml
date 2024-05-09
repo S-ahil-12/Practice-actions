@@ -34,6 +34,9 @@ jobs:
           username: ${{ secrets.TEST_DOCKER_USERNAME }}
           password: ${{ secrets.TEST_DOCKER_PASSWORD }}
 
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
+
       - name: SSH to Instance (secure private key handling)
         env:
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -47,3 +50,4 @@ jobs:
           # Remove temporary key file after execution
           rm my-ssh-key.pem
           #test is done!
+
