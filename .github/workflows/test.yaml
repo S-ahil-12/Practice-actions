@@ -1,55 +1,24 @@
-name: Test SSH Connection and Create Folder (Security Considerations)
+name: SSH Connection and Folder Creation (Not Recommended for Production)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  test-ssh-and-create-folder:
-    runs-on: ubuntu-latest
+  connect_and_create:
+    runs-on: ubuntu-latest  # Adjust if you need a different runner environment
     steps:
-      - name: Checkout code (if applicable)
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Setup SSH (assuming pre-existing key pair)
+      - name: Set SSH Private Key (Not Recommended)
         env:
-          SSH_KEY_PATH: /home/iapp/Downloads/action.pem  # Replace with your actual path
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          # Check if private key exists
-          if [ ! -f "$SSH_KEY_PATH" ]; then
-            echo "Error: Private key file not found at $SSH_KEY_PATH"
-            exit 1
-          fi
+          echo "$SSH_KEY" > temp.pem  # Write the key to a temporary file
+          chmod 600 temp.pem  # Set permissions
+          ssh -o StrictHostKeyChecking=accept-new -i temp.pem ubuntu@13.53.112.231 \
+             mkdir -p /home/ubuntu/test  # Create the folder (if it doesn't exist)
+          rm temp.pem  # Delete the temporary file after use
 
-          # Set permissions for the private key (if necessary)
-          chmod 600 "$SSH_KEY_PATH"
-
-      - name: Test SSH Connection
-        run: |
-          ssh -o StrictHostKeyChecking=accept-new -i "$SSH_KEY_PATH" ubuntu@13.53.112.231 exit 0
-
-      - name: Create Folder Inside /home/ubuntu/Downloads (with caution)
-        run: |
-          # **Security Note:** Avoid storing credentials in the workflow.
-          # Consider using environment variables or secrets management tools.
-          ssh -o StrictHostKeyChecking=accept-new -i "$SSH_KEY_PATH" ubuntu@13.53.112.231 \
-             mkdir -p /home/ubuntu/Downloads/your_folder_name  # Replace with desired folder name
-
-          # Check the exit code to determine success
-          if [[ $? -ne 0 ]]; then
-            echo "Failed to create folder on server."
-          else
-            echo "Folder created successfully (if it didn't already exist)."
-          fi
-
-      - name: Report Success
-        if: success()
-        run: echo "SSH connection and folder creation successful (if applicable)!"
-
-      - name: Report Failure
-        if: failure()
-        run: echo "SSH connection or folder creation failed!"
-
-          #    fail-fast: true  # Moved to job level (if runner cannot be upgraded)
 
