@@ -42,7 +42,7 @@ jobs:
           chmod 400 my-ssh-key.pem
           ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@13.53.112.231 "sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}"
           ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@13.53.112.231 "sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test"
-          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@13.53.112.231 "UNIQUE_ID=\$(date +%s); CONTAINER_NAME=\"uppo-frontend-\${UNIQUE_ID}\"; sudo docker run -d --name \$CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/test"
+          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@13.53.112.231 "UNIQUE_ID=\$(date +%s); CONTAINER_NAME=\"uppo-frontend-\${UNIQUE_ID}\"; sudo docker run -d --name \$CONTAINER_NAME -p 3000:3000 ${{ secrets.TEST_DOCKER_USERNAME }}/test"
           echo "Docker frontend container started......."
           # Remove temporary key file after execution
           rm my-ssh-key.pem

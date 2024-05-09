@@ -1,27 +1,21 @@
-FROM node:20-alpine AS builder
+# Use the official Node.js 14 image as a base
+FROM node:14
 
-# Set working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock)
+# Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
-# Install dependencies
+# Install project dependencies
 RUN npm install
 
-# Copy your application code
+# Copy the rest of the application code
 COPY . .
 
-# Build stage (assuming your build process creates files in /dist)
-RUN npm run build  # Replace with your actual build command
+# Expose the port your app runs on
+EXPOSE 3000
 
-# Final nginx image
-FROM nginx:latest
-
-# Copy default configuration (optional, adjust as needed)
-COPY default.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-
-# Use the built application from the builder stage
-COPY --from=builder /app/build /usr/share/nginx/html
+# Command to run your application
+CMD ["npm", "start"]
 
