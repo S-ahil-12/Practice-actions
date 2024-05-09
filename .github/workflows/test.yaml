@@ -39,10 +39,8 @@ jobs:
         run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
       - name: SSH to Instance (secure private key handling)
-        env:
-          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          echo "$SSH_KEY" > my-ssh-key.pem  #Securely handle private key within the step
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > my-ssh-key.pem  #Securely handle private key within the step
           chmod 400 my-ssh-key.pem
           ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@$13.53.112.231 
           # Commands within the script block
