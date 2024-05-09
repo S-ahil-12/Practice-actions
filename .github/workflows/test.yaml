@@ -42,7 +42,7 @@ jobs:
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > my-ssh-key.pem  #Securely handle private key within the step
           chmod 400 my-ssh-key.pem
-          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@$13.53.112.231 
+          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@$${{ secrets.TEST_SSH_HOST }} 
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
