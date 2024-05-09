@@ -1,24 +1,83 @@
-name: SSH Connection and Folder Creation (Not Recommended for Production)
+name: test deployment
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main  # Trigger on pushes to the main branch
 
 jobs:
-  connect_and_create:
-    runs-on: ubuntu-latest  # Adjust if you need a different runner environment
+  build-and-deploy:
+    runs-on: ubuntu-latest  # Or your preferred runner
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3  # Checkout code from repository
 
-      - name: Set SSH Private Key (Not Recommended)
-        env:
-          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v3  # Combined setup for efficiency
+        with:
+          node-version: 20  # Adjust based on your project's requirements
+
+      - name: Install Angular CLI
+        run: npm install -g @angular/cli --force  # Install globally
+
+      - name: Install project dependencies
+        run: npm ci  # Use npm ci or yarn install based on your project setup
+
+      - name: Build frontend application
+        run: npm run build  # Or your build command
+
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.TEST_DOCKER_USERNAME }}/action .
+
+      - name: Login to Docker Hub (securely using a login action)
+        uses: docker/login-action@v2  # Use a dedicated action for better security
+        with:
+          username: ${{ secrets.TEST_DOCKER_USERNAME }}
+          password: ${{ secrets.TEST_DOCKER_PASSWORD }}
+
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/action
+
+      - name: SSH to Instance (secure private key handling)
+        uses: appleboy/ssh-action@v0.1.2  # Consider a more secure alternative
+        with:
+          host: ${{ secrets.TEST_SSH_HOST }}
+          username: ${{ secrets.TEST_USER_NAME }}
+          key: ${{ secrets.TEST_SSH_PRIVATEKEY }}  # Reference secret directly
+          # Consider using a dedicated SSH key deployment action for better security
+
+      - name: Docker commands on server (improved error handling)
         run: |
-          echo "$SSH_KEY" > temp.pem  # Write the key to a temporary file
-          chmod 600 temp.pem  # Set permissions
-          ssh -o StrictHostKeyChecking=accept-new -i temp.pem ubuntu@13.53.112.231 \
-             mkdir -p /home/ubuntu/test  # Create the folder (if it doesn't exist)
-          rm temp.pem  # Delete the temporary file after use
+          set -e  # Exit on non-zero exit codes for better error handling
 
+          # Store private key securely within the step
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > my-ssh-key.pem
+          chmod 400 my-ssh-key.pem
 
+          # Improve SSH connection handling (optional)
+          if ! ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ${USER_NAME}@${HOSTNAME} << EOF
+            exit 0  # Check if connection is successful
+          EOF; then
+            echo "Error: SSH connection failed!"
+            exit 1  # Exit with an error if connection fails
+          fi
+
+          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ${{ secrets.TEST_SSH_USERNAME }}@${{ secrets.TEST_SSH_HOST }}
+
+          # Additional commands after successful SSH connection
+
+          sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
+          sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/action
+
+          echo "Hello github"  # Print a message (optional)
+
+          # Assuming `/home/uppo-stage/scripts/frontend.bash` exists on the server
+
+          UNIQUE_ID=$(date +%s)
+          CONTAINER_NAME="uppo-frontend-${UNIQUE_ID}"
+          echo "Starting Docker container..."
+          sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/action
+          echo "Docker frontend container started......."
+
+          # Remove temporary key file after execution
+          rm my-ssh-key.pem
