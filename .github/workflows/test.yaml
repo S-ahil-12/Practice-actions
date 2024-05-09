@@ -46,4 +46,4 @@ jobs:
           echo "Docker frontend container started......."
           # Remove temporary key file after execution
           rm my-ssh-key.pem
-          #test is done
+          #test is done!
