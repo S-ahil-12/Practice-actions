@@ -41,8 +41,7 @@ jobs:
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
           echo "Deleting existing container if any"
-          bash /home/uppo-stage/scripts/backend.bash
           UNIQUE_ID=$(date +%s)
-          CONTAINER_NAME="uppo-backend-${UNIQUE_ID}"
+          CONTAINER_NAME="practice-${UNIQUE_ID}"
           echo "Starting Docker conta
 
