@@ -39,30 +39,12 @@ jobs:
         run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
 
       - name: SSH to Instance (secure private key handling)
-        uses: appleboy/ssh-action@v0.1.2  # Consider a more secure alternative
-        with:
-          host: ${{ secrets.TEST_SSH_HOST }}
-          username: ${{ secrets.TEST_SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}  # Reference secret directly
-          # Consider using a dedicated SSH key deployment action for better security
-
-      - name: Docker commands on server (improved error handling)
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          set -e  # Exit on non-zero exit codes for better error handling
-
-          # Securely handle private key within the step
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > my-ssh-key.pem
+          echo "$SSH_KEY" > my-ssh-key.pem  #Securely handle private key within the step
           chmod 400 my-ssh-key.pem
-
-          # Improve SSH connection handling (optional)
-          if ! ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@13.53.112.231 << EOF
-            exit 0  # Check if connection is successful
-          EOF; then
-            echo "Error: SSH connection failed!"
-            exit 1  # Exit with an error if connection fails
-          fi
-
-          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem $USER_NAME@${HOSTNAME} <<'EOF'
+          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@$13.53.112.231 <<'EOF'
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
