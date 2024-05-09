@@ -1,5 +1,4 @@
 name: test deployment
-
 on:
   push:
     branches:
@@ -35,21 +34,21 @@ jobs:
           username: ${{ secrets.TEST_DOCKER_USERNAME }}
           password: ${{ secrets.TEST_DOCKER_PASSWORD }}
 
-      - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.TEST_DOCKER_USERNAME }}/test
-
       - name: SSH to Instance (secure private key handling)
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > my-ssh-key.pem  #Securely handle private key within the step
+          echo "$SSH_KEY" > my-ssh-key.pem  # Securely handle private key within the step
           chmod 400 my-ssh-key.pem
-          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@$${{ secrets.TEST_SSH_HOST }} 
+          ssh -o StrictHostKeyChecking=no -i my-ssh-key.pem ubuntu@13.53.112.231 << EOF
           # Commands within the script block
           sudo docker login -u ${{ secrets.TEST_DOCKER_USERNAME }} -p ${{ secrets.TEST_DOCKER_PASSWORD }}
           sudo docker pull ${{ secrets.TEST_DOCKER_USERNAME }}/test
-          CONTAINER_NAME="uppo-frontend-${UNIQUE_ID}"
+          CONTAINER_NAME="demo-${UNIQUE_ID}"
           echo "Starting Docker container..."
           sudo docker run -d --name $CONTAINER_NAME -p 80:80 ${{ secrets.TEST_DOCKER_USERNAME }}/test
           echo "Docker frontend container started......."
+EOF
 
           # Remove temporary key file after execution
           rm my-ssh-key.pem
